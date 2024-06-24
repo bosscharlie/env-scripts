@@ -19,7 +19,7 @@ from gcpt_run_time_eval import *
 
 tasks_dir = "SPEC06_EmuTasks_10_22_2021"
 perf_base_path = ""
-gcc12Enable = True
+gcc12Enable = False
 emuArgR = "/nfs-nvme/home/share/zyy/shared_payloads/old-gcpt-restorer/gcpt.bin" # open01
 # emuArgR = "/nfs/home/share/liyanqin/old-gcpt-restorer/gcpt.bin" # node003
 

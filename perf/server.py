@@ -27,7 +27,7 @@ class Server(object):
     return tests
 
   def numactl(self, cmd, mem, start, end):
-    if not self.is_epyc():
+    if not self.is_7625():
       return cmd
     return ["numactl", "-m", f"{str(mem)}", "-C", f"{start}-{end}"] + cmd
 
@@ -43,7 +43,6 @@ class Server(object):
   def assign(self, test_name, cmd, threads, xs_path, stdout_file, stderr_file):
     self.check_running()
     (free, mem, start, end) = self.remote_get_free_cores(threads)
-    # print((free, mem, start, end))
     if not free:
       return False
     for running in self.pending_proc:
@@ -93,3 +92,8 @@ class Server(object):
     proc = os.popen(" ".join(self.remote_cmd) + " cat /proc/cpuinfo | grep 'processor' | wc -l")
     result = int(proc.read().strip())
     return (result == 256)
+
+  def is_7625(self):
+    proc = os.popen(" ".join(self.remote_cmd) + " cat /proc/cpuinfo | grep 'processor' | wc -l")
+    result = int(proc.read().strip())
+    return (result == 384)
