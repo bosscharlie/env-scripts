@@ -22,7 +22,7 @@ from tqdm import tqdm
 """ PRAMETERS THAT NEED YOU CHECK """
 tasks_dir = "SPEC06_EmuTasks_10_22_2021"
 perf_base_path = ""
-gcc12Enable = True
+gcc12Enable = False
 emuArgR = "/nfs/home/share/liyanqin/old-gcpt-restorer/gcpt.bin"
 
 ref_run_time_path = "/nfs/home/share/liyanqin/env-scripts/perf/json/gcc12o3-incFpcOff-jeMalloc-time.json"
@@ -123,7 +123,7 @@ def xs_run(server_list, workloads, xs_path, warmup, max_instr, threads, version=
     # base_arguments = [emu_path, '--diff', nemu_so_path, '-W', str(warmup), '-I', str(max_instr), '-i']
     # base_arguments = [emu_path, '-W', str(warmup), '-I', str(max_instr), '-i']
   if version == 2017:
-    base_arguments = [emu_path, '--diff', nemu_so_path, '--enable-fork', '-W', str(warmup), '-I', str(max_instr), '-i']
+    base_arguments = [emu_path, '--diff', nemu_so_path, '--enable-fork', '-W', str(warmup), '-I', str(max_instr), '-r', emuArgR, '-i']
   servers = get_server(server_list)
   def server_all_free():
     for s in servers:
@@ -221,7 +221,7 @@ def get_all_manip():
     return all_manip
 
 def get_total_inst(benchspec, spec_version, isa):
-  base_dir = "/nfs-nvme/home/share/checkpoints_profiles"
+  base_dir = "/nfs/home/share/checkpoints_profiles"
   if spec_version == 2006:
     if isa == "rv64gc_old":
       base_path = os.path.join(base_dir, "spec06_rv64gc_o2_50m/profiling")
@@ -253,6 +253,10 @@ def get_total_inst(benchspec, spec_version, isa):
       bench_path = os.path.join(base_path, filename)
     elif isa == "rv64gcb_o3":
       base_path = os.path.join(base_dir, "spec17_rv64gcb_o3_20m/logs/profiling/")
+      filename = benchspec + ".log"
+      bench_path = os.path.join(base_path, filename)
+    elif isa == "rv64gcb_o3_speed":
+      base_path = os.path.join(base_dir, "spec17_speed_rv64gcb_o3_20m/logs/profiling")
       filename = benchspec + ".log"
       bench_path = os.path.join(base_path, filename)
     else:
@@ -314,6 +318,8 @@ def xs_report(all_gcpt, xs_path, spec_version, isa, num_jobs, json_path = None):
     gcpt_ipc[result[0]].append(result[1])
   print("=================== Coverage ==================")
   spec_time = {}
+  spec_cycles = {}
+  spec_insts = {}
   for benchspec in gcpt_ipc:
     total_weight = sum(map(lambda info: info[0], gcpt_ipc[benchspec]))
     total_cpi = sum(map(lambda info: info[0] / info[1], gcpt_ipc[benchspec])) / total_weight
@@ -321,14 +327,27 @@ def xs_report(all_gcpt, xs_path, spec_version, isa, num_jobs, json_path = None):
       num_instr = int(json_data[benchspec]["insts"])
     else:
       num_instr = get_total_inst(benchspec, spec_version, isa)
+    num_cycles = total_cpi * num_instr
     num_seconds = total_cpi * num_instr / (frequency * (10 ** 9))
     print(f"{benchspec:>25} coverage: {total_weight:.2f}")
     spec_name = benchspec.split("_")[0]
     spec_time[spec_name] = spec_time.get(spec_name, 0) + num_seconds
-  print()
-  spec_score.get_spec_score(spec_time, spec_version, frequency)
+    spec_cycles[spec_name] = spec_cycles.get(spec_name, 0) + num_cycles
+    spec_insts[spec_name] = spec_insts.get(spec_name, 0) + num_instr
+  # print()
+  # spec_score.get_spec_score(spec_time, spec_version, frequency)
   print(f"Number of Checkpoints: {len(all_gcpt)}")
   print(f"SPEC CPU Version: SPEC CPU{spec_version}, {isa}")
+  print("=================== IPC ==================")
+  spec_ipc = {}
+  for spec_name in spec_cycles:
+    ipc = spec_insts[spec_name] / spec_cycles[spec_name]
+    spec_ipc[spec_name] = ipc
+    print(f"{spec_name:>25} ipc: {ipc:.2f}")
+  # Calculate harmonic mean value
+  harmean = len(spec_ipc) / sum(map(lambda info: 1/info[1], spec_ipc.items()))
+  print(f"harmonic mean ipc: {harmean:.2f}")
+  
 
 
 def xs_show(all_gcpt):
@@ -360,7 +379,7 @@ if __name__ == "__main__":
   parser.add_argument('--debug', '-D', action='store_true', default=False, help='debug options')
   parser.add_argument('--check', '-C', action='store_true', default=False, help='debug options')
   parser.add_argument('--dump-json-path', type=str, help='dump the json path of filter gcpt')
-  parser.add_argument('--version', default=2006, type=int, help='SPEC version')
+  parser.add_argument('--version', default=2017, type=int, help='SPEC version')
   parser.add_argument('--isa', default="rv64gcb", type=str, help='ISA version')
   parser.add_argument('--dir', default=None, type=str, help='SPECTasks dir')
   parser.add_argument('--jobs', '-j', default=1, type=int, help="processing files in 'j' threads")

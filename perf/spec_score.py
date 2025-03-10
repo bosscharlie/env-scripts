@@ -43,16 +43,16 @@ def get_spec_int(spec_version):
     ]
   elif spec_version == 2017:
     return [
-      "500.perlbench_r",
-      "502.gcc_r",
-      "505.mcf_r",
-      "520.omnetpp_r",
-      "523.xalancbmk_r",
-      "525.x264_r",
-      "531.deepsjeng_r",
-      "541.leela_r",
-      "548.exchange2_r",
-      "557.xz_r"
+      "600.perlbench_s",
+      "602.gcc_s",
+      "605.mcf_s",
+      "620.omnetpp_s",
+      "623.xalancbmk_s",
+      "625.x264_s",
+      "631.deepsjeng_s",
+      "641.leela_s",
+      "648.exchange2_s",
+      "657.xz_s"
     ]
   return None
 
